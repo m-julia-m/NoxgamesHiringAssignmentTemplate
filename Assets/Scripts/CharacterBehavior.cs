@@ -2,14 +2,12 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
-using DG.Tweening;
 
 public class CharacterBehavior : MonoBehaviour
 {
     private int levelPoints = 1;
     private TextMeshPro levelLabel;
 
-    // Start is called before the first frame update
     void Start()
     {
         UpdateLevelLabel();
@@ -32,24 +30,21 @@ public class CharacterBehavior : MonoBehaviour
         return levelPoints;
     }
 
-    // Return true if this character has a higher level and won.
     /// <summary>
-    /// Fight enemy, transfer level points from higher-level opponent to lower level opponent.
+    /// Fight opponent - transfer level points from higher-level character to lower level character.
     /// In case of level equivalence, enemy wins.
     /// </summary>
-    /// <param name="enemy"></param>
-    /// <returns>True if this opponent won, false if enemy opponent won.</returns>
-    public bool FightOpponent(GameObject enemy)
+    /// <param name="opponent">Character to fight.</param>
+    /// <returns>True if this character won, false if opponent won.</returns>
+    public bool FightOpponent(GameObject opponent)
     {
-        int enemyLevelPoints = enemy.GetComponent<CharacterBehavior>().GetLevel();
-
-        // FightAnimation().WaitForCompletion();
+        int enemyLevelPoints = opponent.GetComponent<CharacterBehavior>().GetLevel();
 
         if (enemyLevelPoints < levelPoints)
         {
             int temp = levelPoints;
             SetLevel(levelPoints + enemyLevelPoints);
-            enemy.GetComponent<CharacterBehavior>().SetLevel(enemyLevelPoints - temp);
+            opponent.GetComponent<CharacterBehavior>().SetLevel(enemyLevelPoints - temp);
             
             return true;
         }
@@ -57,16 +52,9 @@ public class CharacterBehavior : MonoBehaviour
         {
             int temp = levelPoints;
             SetLevel(levelPoints - enemyLevelPoints);
-            enemy.GetComponent<CharacterBehavior>().SetLevel(enemyLevelPoints + temp);
+            opponent.GetComponent<CharacterBehavior>().SetLevel(enemyLevelPoints + temp);
 
             return false;
         }
     }
-
-    //private Sequence FightAnimation()
-    //{
-    //    Sequence mySequence = DOTween.Sequence().Append(transform.DOShakeScale(1, 1, 1, 0.5f, true));
-    //    return mySequence;
-
-    //}
 }

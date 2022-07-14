@@ -2,11 +2,18 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using DG.Tweening;
+using System.Linq;
 
 public class GameplayManager : MonoBehaviour
 {
+    // UI Screens.
+    public GameObject gameOverScreen;
+    public GameObject levelClearedScreen;
+
+    // Gameplay content.
     public GameObject playerCharacterPf;
     public GameObject enemyCharacterPf;
+    public List<AudioSource> FightSounds;
 
     public Vector3 playerTowerPosition;
     public int playerTowerStartingCellCount;
@@ -16,11 +23,15 @@ public class GameplayManager : MonoBehaviour
 
     private TowerBuilder enemyTowerBuilder;
     private TowerBuilder playerTowerBuilder;
-    private GameObject player;
-    private bool touchActive = false;
 
-    // Start is called before the first frame update
-    void Start()
+    private GameObject player;
+
+    /// <summary>
+    /// When true, player can tap tower cells to move his player character.
+    /// </summary>
+    private bool tapControlActive = false;
+
+    public void InitialSetup()
     {
         int startingPlayerLevel = Random.Range(2, 10);
 
@@ -28,17 +39,17 @@ public class GameplayManager : MonoBehaviour
         playerTowerBuilder = GameObject.Find("PlayerTowerBuilder").GetComponent<TowerBuilder>();
         playerTowerBuilder.BuildTower(playerTowerPosition, playerTowerStartingCellCount);
         SpawnPlayer(startingPlayerLevel);
-        
-        
+
+
         // Build enemy tower
         enemyTowerBuilder = GameObject.Find("EnemyTowerBuilder").GetComponent<TowerBuilder>();
         enemyTowerBuilder.BuildTower(enemyTowerPosition, enemyTowerStartingCellCount);
         SpawnEnemies(startingPlayerLevel);
 
-        touchActive = true;
+        // Activate controls.
+        tapControlActive = true;
     }
 
-    // Update is called once per frame
     void Update()
     {
         PlayerTouchControl();
@@ -46,7 +57,7 @@ public class GameplayManager : MonoBehaviour
 
     void PlayerTouchControl()
     {
-        if (touchActive && Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Began)
+        if (tapControlActive && Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Began)
         {
             Ray ray = Camera.main.ScreenPointToRay(Input.touches[0].position);
             RaycastHit hit;
@@ -55,31 +66,27 @@ public class GameplayManager : MonoBehaviour
             {
                 if (hit.transform.tag == "EnemyTowerCell")
                 {
-                    touchActive = false;
+                    tapControlActive = false;
+
                     Vector3 dest = hit.transform.gameObject.GetComponent<TowerCellBehavior>().GetPlayerPosition();
-                    player.transform.DOMove(dest, 1).OnComplete(() =>
+                    MovePlayerAnimation(dest).OnComplete(() =>
                     {
                         Fight(hit.transform.gameObject);
-                        touchActive = true;
                     });
                 }
 
                 else if (hit.transform.tag == "PlayerTowerCell")
                 {
-                    touchActive = false;
                     Vector3 dest = hit.transform.gameObject.GetComponent<TowerCellBehavior>().GetPlayerPosition();
-                    player.transform.DOMove(dest, 1).OnComplete(() =>
-                    {
-                        touchActive = true;
-                    });
+                    MovePlayerAnimation(dest);
+
                 }   
             }
         }
     }
     Sequence MovePlayerAnimation(Vector3 dest)
     {
-        Sequence mySequence = DOTween.Sequence().Append(player.transform.DOMove(dest, 1));
-        return mySequence;
+        return DOTween.Sequence().Append(player.transform.DOMove(dest, 1));
     }
 
     Sequence FightAnimation(GameObject player, GameObject enemy)
@@ -92,80 +99,84 @@ public class GameplayManager : MonoBehaviour
 
     void Fight(GameObject towerCell)
     {
+        tapControlActive = false;
+
         GameObject enemy = towerCell.GetComponent<TowerCellBehavior>().GetEnemy();
 
         if (enemy != null)
         {
             bool playerWon = player.GetComponent<CharacterBehavior>().FightOpponent(enemy);
-            
+
+            FightSounds[Random.Range(0, FightSounds.Count)].Play();
             FightAnimation(player, enemy).OnComplete(() =>
             {
                 if (playerWon)
                 {
+                    // Transfer tower cell.
                     enemyTowerBuilder.RemoveTowerCell(towerCell);
                     playerTowerBuilder.AddTowerCell();
 
+                    // Move player to player tower.
                     Vector3 dest = playerTowerBuilder.GetTopTowerCell().GetComponent<TowerCellBehavior>().GetPlayerPosition();
                     MovePlayerAnimation(dest);
+                    tapControlActive = true;
 
+                    // Check winning condition.
                     if (!enemyTowerBuilder.HasTowerCells())
                     {
-                        Debug.Log("Player won, CONGRATULATIONS.");
+                        levelClearedScreen.SetActive(true);
                     }
                 }
                 else
                 {
-                    Debug.Log("Player lost, GAME OVER.");
+                    gameOverScreen.SetActive(true);
                 }
-
             });
         }      
     }
 
+    /// <summary>
+    /// Create player character of given level and move him to player tower.
+    /// </summary>
+    /// <param name="level">Starting player level.</param>
     void SpawnPlayer(int level)
     {
         player = Instantiate(playerCharacterPf);
         player.GetComponent<CharacterBehavior>().SetLevel(level);
+
         Vector3 dest = playerTowerBuilder.GetTopTowerCell().GetComponent<TowerCellBehavior>().GetPlayerPosition();
         MovePlayerAnimation(dest);
     }
 
+    /// <summary>
+    /// Spawns enemies in enemy tower cells. Enemy levels are generated based on player level to allow winning conditions.
+    /// </summary>
+    /// <param name="playerLevel">Starting player level.</param>
     void SpawnEnemies(int playerLevel)
     {
-        List<GameObject> enemies = new List<GameObject>();
-        IEnumerable<GameObject> enemyTowerCells = enemyTowerBuilder.GetTowerCells();
+        List<GameObject> towerCells = enemyTowerBuilder.GetTowerCells();
+        List<int> emptyCellsIndices = Enumerable.Range(0, towerCells.Count).ToList();
 
-        // Generate enemy for each enemy tower cell based on playerLevel.
-        foreach (GameObject towerCell in enemyTowerCells)
+        for (int i = 0; i < towerCells.Count; i++)
         {
+            // Calculate new enemy level.
             int enemyLevel = playerLevel - Random.Range(1, playerLevel / 2);
             playerLevel += enemyLevel;
 
+            // Create enemy.
             GameObject enemy = Instantiate(enemyCharacterPf);
-            enemy.name = enemyCharacterPf.name; // Name is used in TowerCellBehavior to find enemy.
             enemy.GetComponent<CharacterBehavior>().SetLevel(enemyLevel);
-            enemies.Add(enemy);
-        }
 
-        Shuffle(enemies, enemies.Count);
-
-        // Asign enemies to tower cells.
-        enemyTowerBuilder.AssignEnemyCharacters(enemies);
-    }
-
-    void Shuffle<T>(IList<T> list, int swapCount)
-    {
-        for (int i = 0; i < swapCount; i++)
-        {
-            Swap(list, Random.Range(0, list.Count), Random.Range(0, list.Count));
+            // Assign to a random empty enemy tower cell.
+            int rand = Random.Range(0, emptyCellsIndices.Count);
+            int chosenCellIndex = emptyCellsIndices[rand];
+            towerCells[chosenCellIndex].GetComponent<TowerCellBehavior>().SetEnemy(enemy);
+            emptyCellsIndices.RemoveAt(rand);
         }
     }
 
-    void Swap<T>(IList<T> list, int i, int j)
+    public void SetTapControlActive(bool value)
     {
-        var temp = list[i];
-        list[i] = list[j];
-        list[j] = temp;
+        tapControlActive = value;
     }
-
 }

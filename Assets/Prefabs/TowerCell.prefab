@@ -80,7 +80,7 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: -9
   m_Sprite: {fileID: 21300000, guid: 329f171b70e7cbc428ef46c4d62c2ba3, type: 3}
-  m_Color: {r: 0.7327044, g: 0.8572398, b: 1, a: 1}
+  m_Color: {r: 0.8, g: 0.78431374, b: 0.53333336, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -144,6 +144,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 726002396f34bfa46936a21e89db227b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  enemy: {fileID: 0}
 --- !u!1 &4653394106326185000
 GameObject:
   m_ObjectHideFlags: 0

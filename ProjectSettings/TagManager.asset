@@ -7,6 +7,7 @@ TagManager:
   - EnemyTowerCell
   - Enemy
   - PlayerTowerCell
+  - UIScreen
   layers:
   - Default
   - TransparentFX
