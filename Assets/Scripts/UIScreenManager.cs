@@ -9,9 +9,6 @@ public class UIScreenManager : MonoBehaviour
     public GameObject gameplayManagerObj;
     private GameplayManager gameplayManagerScript;
 
-    public GameObject pauseScreen;
-    public GameObject pauseButton;
-
     private AudioSource buttonSound;
 
     private void Start()
@@ -20,18 +17,11 @@ public class UIScreenManager : MonoBehaviour
         buttonSound = GameObject.Find("ButtonSound").GetComponent<AudioSource>();
     }
 
-    public void OnActive()
-    {
-        gameplayManagerScript.SetTapControlActive(false);
-        pauseButton.SetActive(false);
-    }
-
     public void PlayButton()
     {
         buttonSound.Play();
         gameObject.SetActive(false);
         gameplayManagerScript.InitialSetup();
-        pauseButton.SetActive(true);
         gameplayManagerScript.SetTapControlActive(true);
     }
 
@@ -45,8 +35,7 @@ public class UIScreenManager : MonoBehaviour
     public void CotinueButton()
     {
         buttonSound.Play();
-        gameplayManagerScript.SetTapControlActive(true);
-        pauseButton.SetActive(true);
         gameObject.SetActive(false);
+        gameplayManagerScript.SetTapControlActive(true);
     }
 }

@@ -53,40 +53,49 @@ public class GameplayManager : MonoBehaviour
     void Update()
     {
         PlayerTouchControl();
+        PlayerMouseControl();
+    }
+
+    void PlayerMouseControl()
+    {
+        if (tapControlActive && Input.GetMouseButtonDown(0))
+        {
+            ProcessTap(Input.mousePosition);
+        }
     }
 
     void PlayerTouchControl()
     {
         if (tapControlActive && Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Began)
         {
-            Ray ray = Camera.main.ScreenPointToRay(Input.touches[0].position);
-            RaycastHit hit;
+            ProcessTap(Input.touches[0].position);
+        }
+    }
 
-            if (Physics.Raycast(ray, out hit))
+    void ProcessTap(Vector3 tapPosition)
+    {
+        Ray ray = Camera.main.ScreenPointToRay(tapPosition);
+        RaycastHit hit;
+
+        if (Physics.Raycast(ray, out hit))
+        {
+            if (hit.transform.tag == "EnemyTowerCell")
             {
-                if (hit.transform.tag == "EnemyTowerCell")
+                tapControlActive = false;
+
+                Vector3 dest = hit.transform.gameObject.GetComponent<TowerCellBehavior>().GetPlayerPosition();
+                MovePlayerAnimation(dest).OnComplete(() =>
                 {
-                    tapControlActive = false;
-
-                    Vector3 dest = hit.transform.gameObject.GetComponent<TowerCellBehavior>().GetPlayerPosition();
-                    MovePlayerAnimation(dest).OnComplete(() =>
-                    {
-                        Fight(hit.transform.gameObject);
-                    });
-                }
-
-                else if (hit.transform.tag == "PlayerTowerCell")
-                {
-                    Vector3 dest = hit.transform.gameObject.GetComponent<TowerCellBehavior>().GetPlayerPosition();
-                    MovePlayerAnimation(dest);
-
-                }   
+                    Fight(hit.transform.gameObject);
+                });
             }
         }
     }
+    
     Sequence MovePlayerAnimation(Vector3 dest)
     {
-        return DOTween.Sequence().Append(player.transform.DOMove(dest, 1));
+        return DOTween.Sequence()
+            .Append(player.transform.DOMove(dest, 1));
     }
 
     Sequence FightAnimation(GameObject player, GameObject enemy)
@@ -102,37 +111,40 @@ public class GameplayManager : MonoBehaviour
         tapControlActive = false;
 
         GameObject enemy = towerCell.GetComponent<TowerCellBehavior>().GetEnemy();
-
-        if (enemy != null)
+        if (enemy == null)
         {
-            bool playerWon = player.GetComponent<CharacterBehavior>().FightOpponent(enemy);
+            return;
+        }
 
-            FightSounds[Random.Range(0, FightSounds.Count)].Play();
-            FightAnimation(player, enemy).OnComplete(() =>
+        bool playerWon = player.GetComponent<CharacterBehavior>().FightOpponent(enemy);
+
+        FightSounds[Random.Range(0, FightSounds.Count)].Play();
+        FightAnimation(player, enemy).OnComplete(() =>
+        {
+            if (playerWon)
             {
-                if (playerWon)
-                {
-                    // Transfer tower cell.
-                    enemyTowerBuilder.RemoveTowerCell(towerCell);
-                    playerTowerBuilder.AddTowerCell();
+                // Transfer tower cell.
+                enemyTowerBuilder.RemoveTowerCell(towerCell);
+                playerTowerBuilder.AddTowerCell();
 
-                    // Move player to player tower.
-                    Vector3 dest = playerTowerBuilder.GetTopTowerCell().GetComponent<TowerCellBehavior>().GetPlayerPosition();
-                    MovePlayerAnimation(dest);
-                    tapControlActive = true;
+                // Move player to player tower.
+                Vector3 dest = playerTowerBuilder.GetTopTowerCell().GetComponent<TowerCellBehavior>().GetPlayerPosition();
+                MovePlayerAnimation(dest);
+                tapControlActive = true;
 
-                    // Check winning condition.
-                    if (!enemyTowerBuilder.HasTowerCells())
-                    {
-                        levelClearedScreen.SetActive(true);
-                    }
-                }
-                else
+                // Check winning condition.
+                if (!enemyTowerBuilder.HasTowerCells())
                 {
-                    gameOverScreen.SetActive(true);
+                    tapControlActive = false;
+                    levelClearedScreen.SetActive(true);
                 }
-            });
-        }      
+            }
+            else
+            {
+                tapControlActive = false;
+                gameOverScreen.SetActive(true);
+            }
+        });
     }
 
     /// <summary>

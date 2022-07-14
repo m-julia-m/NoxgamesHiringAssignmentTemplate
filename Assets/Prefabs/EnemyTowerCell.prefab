@@ -32,6 +32,11 @@ PrefabInstance:
       propertyPath: m_TagString
       value: EnemyTowerCell
       objectReference: {fileID: 0}
+    - target: {fileID: 2885125230849323224, guid: 553076600bbc7d649a9243c64f239536,
+        type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 5834611569721652923, guid: 553076600bbc7d649a9243c64f239536,
         type: 3}
       propertyPath: m_RootOrder
@@ -87,5 +92,7 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 2885125230849323224, guid: 553076600bbc7d649a9243c64f239536, type: 3}
+    - {fileID: 386566859983888449, guid: 553076600bbc7d649a9243c64f239536, type: 3}
   m_SourcePrefab: {fileID: 100100000, guid: 553076600bbc7d649a9243c64f239536, type: 3}
