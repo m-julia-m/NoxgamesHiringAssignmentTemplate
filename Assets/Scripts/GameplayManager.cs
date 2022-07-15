@@ -50,6 +50,11 @@ public class GameplayManager : MonoBehaviour
         tapControlActive = true;
     }
 
+    public void SetTapControlActive(bool value)
+    {
+        tapControlActive = value;
+    }
+
     void Update()
     {
         PlayerTouchControl();
@@ -185,10 +190,5 @@ public class GameplayManager : MonoBehaviour
             towerCells[chosenCellIndex].GetComponent<TowerCellBehavior>().SetEnemy(enemy);
             emptyCellsIndices.RemoveAt(rand);
         }
-    }
-
-    public void SetTapControlActive(bool value)
-    {
-        tapControlActive = value;
     }
 }

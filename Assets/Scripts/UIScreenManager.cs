@@ -28,14 +28,8 @@ public class UIScreenManager : MonoBehaviour
     public async void MainMenuButton()
     {
         buttonSound.Play();
+        // Wait till sound ends before loading scene.
         await Task.Delay(System.TimeSpan.FromSeconds(buttonSound.clip.length));
         SceneManager.LoadScene("Main");
-    }
-
-    public void CotinueButton()
-    {
-        buttonSound.Play();
-        gameObject.SetActive(false);
-        gameplayManagerScript.SetTapControlActive(true);
     }
 }
